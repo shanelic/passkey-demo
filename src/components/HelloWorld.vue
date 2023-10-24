@@ -4,6 +4,10 @@ import { ref } from "vue";
 defineProps<{ msg: string }>();
 
 const count = ref(0);
+const fetchChallenge = () => {
+  let random = Math.round(Math.random() * 10000);
+  return "shanelic" + random;
+};
 </script>
 
 <template>
