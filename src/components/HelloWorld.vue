@@ -4,6 +4,30 @@ import { ref } from "vue";
 defineProps<{ msg: string }>();
 
 const count = ref(0);
+const checkCredentialAvailable = () => {
+  // Availability of `window.PublicKeyCredential` means WebAuthn is usable.
+  // `isUserVerifyingPlatformAuthenticatorAvailable` means the feature detection is usable.
+  // `​​isConditionalMediationAvailable` means the feature detection is usable.
+  if (
+    window.PublicKeyCredential &&
+    PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable &&
+    PublicKeyCredential.isConditionalMediationAvailable
+  ) {
+    // Check if user verifying platform authenticator is available.
+    return Promise.all([
+      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(),
+      PublicKeyCredential.isConditionalMediationAvailable(),
+    ]).then((results) => {
+      if (results.every((r) => r === true)) {
+        return true;
+      } else {
+        return false;
+      }
+    });
+  } else {
+    return false;
+  }
+};
 const passkeyRegister = async () => {
   console.info("register by passkey");
   let username = prompt("Enter your username", "username");
