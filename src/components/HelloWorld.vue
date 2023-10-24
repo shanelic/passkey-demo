@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import * as CBOR from "cbor-web";
 
 defineProps<{ msg: string }>();
 
@@ -73,11 +74,29 @@ const passkeyRegister = async () => {
     let json = JSON.parse(new TextDecoder("UTF-8").decode(clientDataJSON));
     let challengeInCredential = atob(json.challenge);
 
+    let decodedAttestationObj = CBOR.decode(attestation.attestationObject);
+    let { authData } = decodedAttestationObj;
+    // get the length of the credential ID
+    let dataView = new DataView(new ArrayBuffer(2));
+    let idLenBytes = authData.slice(53, 55);
+    idLenBytes.forEach((value: number, index: number) => dataView.setUint8(index, value));
+    let credentialIdLength = dataView.getUint16(0);
+
+    // get the credential ID
+    let credentialId = authData.slice(55, 55 + credentialIdLength);
+    storedCredentialId.value = credentialId;
+    // get the public key object
+    let publicKeyBytes = authData.slice(55 + credentialIdLength);
+    // the publicKeyBytes are encoded again as CBOR
+    let publicKeyObject = CBOR.decode(publicKeyBytes.buffer);
     console.info({
       attestation: attestation,
       json: json,
       challenge: challenge,
       challengeInCredential: challengeInCredential,
+      decodedAttestationObj: decodedAttestationObj,
+      credentialId: credentialId,
+      publicKeyObject: publicKeyObject,
     });
   } catch (error) {
     console.warn(
@@ -113,6 +132,7 @@ const passkeyLogin = async () => {
     clientDataJSON.challenge = atob(clientDataJSON.challenge);
     console.info({
       assertion: assertion,
+      // authenticatorData: CBOR.decode(assertion.authenticatorData),
       clientDataJSON: clientDataJSON,
       signature: buf2hex(assertion.signature),
       userHandle: new TextDecoder("UTF-8").decode(assertion.userHandle ?? new ArrayBuffer(0)),
