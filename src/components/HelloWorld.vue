@@ -159,6 +159,12 @@ const buf2hex = (buffer: ArrayBuffer) => { // buffer is an ArrayBuffer
 
   <div class="card">
     <button type="button" @click="count++">count is {{ count }}</button>
+    <button v-if="checkCredentialAvailable()" @click="passkeyRegister">
+      Register
+    </button>
+    <button v-if="checkCredentialAvailable()" @click="passkeyLogin">
+      Login
+    </button>
     <p>
       Edit
       <code>components/HelloWorld.vue</code> to test HMR
