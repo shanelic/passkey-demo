@@ -4,6 +4,65 @@ import { ref } from "vue";
 defineProps<{ msg: string }>();
 
 const count = ref(0);
+const passkeyRegister = async () => {
+  console.info("register by passkey");
+  let username = prompt("Enter your username", "username");
+  if (username == null) return;
+  let challenge = fetchChallenge();
+  let options: PublicKeyCredentialCreationOptions = {
+    challenge: Uint8Array.from(challenge, (c) => c.charCodeAt(0)),
+    rp: {
+      name: "Passkey Demo",
+      id: "localhost",
+    },
+    user: {
+      id: Uint8Array.from("UZSL85T9AFC", (c) => c.charCodeAt(0)),
+      name: username,
+      displayName: "@" + username,
+    },
+    pubKeyCredParams: [
+      { alg: -7, type: "public-key" },
+      // { alg: -257, type: "public-key" },
+    ],
+    excludeCredentials: [
+      {
+        id: Uint8Array.from("UZSL85T9AFC", (c) => c.charCodeAt(0)),
+        type: "public-key",
+        transports: ["internal", "usb", "ble", "nfc"],
+      },
+    ],
+    authenticatorSelection: {
+      // authenticatorAttachment: "platform", // not providing for all options
+      requireResidentKey: true,
+    },
+    attestation: "direct",
+  };
+
+  try {
+    let credential = await navigator.credentials.create({
+      publicKey: options,
+    });
+
+    let attestation = (credential as PublicKeyCredential)
+      .response as AuthenticatorAttestationResponse;
+    let clientDataJSON = attestation.clientDataJSON;
+    let json = JSON.parse(new TextDecoder("UTF-8").decode(clientDataJSON));
+    let challengeInCredential = atob(json.challenge);
+
+    console.info({
+      attestation: attestation,
+      json: json,
+      challenge: challenge,
+      challengeInCredential: challengeInCredential,
+    });
+  } catch (error) {
+    console.warn(
+      "the error caught in creation of registration credential",
+      error,
+      (error as Error).message
+    );
+  }
+};
 const fetchChallenge = () => {
   let random = Math.round(Math.random() * 10000);
   return "shanelic" + random;
