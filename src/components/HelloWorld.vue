@@ -63,6 +63,62 @@ const passkeyRegister = async () => {
     );
   }
 };
+const passkeyLogin = async () => {
+  console.info("login by passkey");
+  let challenge = fetchChallenge();
+  let options: PublicKeyCredentialRequestOptions = {
+    challenge: Uint8Array.from(challenge, (c) => c.charCodeAt(0)),
+    // allowCredentials: [
+    //   {
+    //     id: credentialId, // Uint8Array.from(credentialId, (c) => c.charCodeAt(0)),
+    //     type: "public-key",
+    //     transports: ["hybrid", "internal", "usb", "ble", "nfc"],
+    //   },
+    // ],
+    timeout: 60000,
+  };
+  try {
+    let credential = await navigator.credentials.get({
+      publicKey: options,
+    });
+    let assertion = (credential as PublicKeyCredential)
+      .response as AuthenticatorAssertionResponse;
+    var clientDataJSON = JSON.parse(
+      new TextDecoder("UTF-8").decode(assertion.clientDataJSON)
+    );
+    clientDataJSON.challenge = atob(clientDataJSON.challenge);
+    console.info({
+      assertion: assertion,
+      clientDataJSON: clientDataJSON,
+      signature: buf2hex(assertion.signature),
+      userHandle: new TextDecoder("UTF-8").decode(assertion.userHandle ?? new ArrayBuffer(0)),
+    });
+
+
+    // Create a DataView to work with the ArrayBuffer
+    const dataView = new DataView(assertion.authenticatorData);
+
+    // Parse the authenticatorData fields
+    const rpIdHash = new Uint8Array(assertion.authenticatorData.slice(0, 32)); // RP ID Hash
+    const flags = dataView.getUint8(32); // Flags
+    const signatureCounter = dataView.getUint32(33, false); // Signature Counter
+
+    // If there's an attestation data, you can extract it as well
+    const attestationData = assertion.authenticatorData.slice(37); // Attestation Data
+
+    console.log('RP ID Hash:', rpIdHash);
+    console.log('Flags:', flags);
+    console.log('Signature Counter:', signatureCounter);
+    console.log('Attestation Data:', attestationData);
+
+  } catch (error) {
+    console.warn(
+      "the error caught when getting login credential",
+      error,
+      (error as Error).message
+    );
+  }
+};
 const fetchChallenge = () => {
   let random = Math.round(Math.random() * 10000);
   return "shanelic" + random;
